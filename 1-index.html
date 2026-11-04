@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>節奏大師 - 旗艦 12 風格版</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #121212; color: white; text-align: center; padding: 10px; margin: 0; overflow-x: hidden; }
+        .container { background: #1e1e1e; padding: 12px; border-radius: 15px; max-width: 100%; margin: auto; border: 1px solid #444; box-sizing: border-box; }
+        .mixer { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #2a2a2a; padding: 10px; border-radius: 10px; margin-bottom: 10px; }
+        .mixer-channel { display: flex; flex-direction: column; gap: 3px; text-align: left; font-size: 10px; }
+        .grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin: 12px 0; }
+        .cell { aspect-ratio: 1; background: #3d3d3d; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #555; -webkit-tap-highlight-color: transparent; font-weight: bold; font-size: 11px; color: #ccc; }
+        .cell.note { background: #2ecc71; color: white; border-color: #27ae60; }
+        .cell.active-step { border: 2px solid #ffffff; box-shadow: 0 0 8px #ffffff; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; text-align: left; margin-bottom: 6px; }
+        label { font-size: 10px; color: #f1c40f; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; background: #1a1a1a; color: white; border: 1px solid #555; border-radius: 6px; font-size: 13px; box-sizing: border-box; }
+        button { padding: 10px; border-radius: 8px; border: none; font-size: 14px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 4px; }
+        .btn-play { background: #2ecc71; color: white; height: 45px; font-size: 16px; margin-top: 8px; }
+        .btn-random { background: #3498db; color: white; }
+        .btn-export { background: #e67e22; color: white; margin-top: 8px; font-size: 12px; }
+        .btn-lang { position: fixed; top: 10px; right: 10px; width: auto; padding: 6px 12px; font-size: 12px; background: #2a2a2a; color: #f1c40f; border: 1px solid #555; margin-top: 0; z-index: 10; }
+        footer { margin-top: 14px; font-size: 11px; color: #8FA3A0; line-height: 1.7; }
+        footer a { color: #2FBFAA; }
+    </style>
+</head>
+<body>
+
+<button id="btnLang" class="btn-lang" onclick="toggleLang()">EN</button>
+
+<div class="container">
+    <h4 id="appTitle" style="margin: 0 0 10px 0; color: #f1c40f;">節奏大師 12風格旗艦版</h4>
+
+    <div class="mixer">
+        <div class="mixer-channel">
+            <label id="lblStrong">🟩 重音音色</label>
+            <select id="strongSound"><option value="rimshot">鼓邊 (Rim)</option><option value="highClick">高音節拍</option></select>
+            <input type="range" id="strongVol" min="0" max="1" step="0.1" value="0.8">
+        </div>
+        <div class="mixer-channel">
+            <label id="lblWeak">⬛ 輕音音色</label>
+            <select id="weakSound"><option value="hihat">腳踏鈸 (Hat)</option><option value="lowClick">低音節拍</option><option value="silent">靜音</option></select>
+            <input type="range" id="weakVol" min="0" max="1" step="0.1" value="0.2">
+        </div>
+    </div>
+
+    <div class="controls">
+        <div><label id="lblBpm">BPM 速度</label><input type="number" id="bpm" value="80"></div>
+        <div>
+            <label id="lblAccentCount">重音數 (3-10)</label>
+            <select id="accentCount">
+                <option value="3">3 個</option><option value="4">4 個</option><option value="5" selected>5 個</option>
+                <option value="6">6 個</option><option value="7">7 個</option><option value="8">8 個</option>
+                <option value="9">9 個</option><option value="10">10 個</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="btnRandom" class="btn-random" onclick="randomizeAccents()">🎲 隨機重音</button>
+        <div>
+            <label id="lblStyle">12 種風格選擇</label>
+            <select id="styleSelect" onchange="applyLatinStyle()">
+                <option value="">-- 選擇風格 --</option>
+                <option value="son32">Son Clave 3-2</option><option value="son23">Son Clave 2-3</option>
+                <option value="rumba32">Rumba Clave 3-2</option><option value="rumba23">Rumba Clave 2-3</option>
+                <option value="mambo">Mambo</option><option value="chacha">Cha-Cha</option>
+                <option value="samba">Samba</option><option value="bossa">Bossa Nova</option>
+                <option value="tango">Tango</option><option value="joropo">Joropo</option>
+                <option value="songo">Songo</option><option value="bolero">Bolero</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="grid" class="grid"></div>
+
+    <button id="playBtn" class="btn-play" onclick="togglePlay()">▶ 播放 / 停止</button>
+    <button id="btnExport" class="btn-export" onclick="exportWav()">💾 生成無雜音 WAV</button>
+
+    <footer>
+        <span id="txtMade">設計：朱元雷（Gemini Studio，2026 年 2 月）</span><br>
+        <span id="txtLicense">© 2026 朱元雷 · <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a> · 教學使用不限收費，詳見 <a href="https://tcmctw.github.io/" target="_blank" rel="noopener">tcmctw.github.io</a></span>
+    </footer>
+</div>
+
+<script>
+    let isPlaying = false, step = 0, nextStepTime = 0, timer = null, audioCtx = null;
+
+    const latinStyles = {
+        son32:[1,0,0,1,0,0,1,0,0,0,1,0,1,0,0,0], son23:[0,0,1,0,1,0,0,0,1,0,0,1,0,0,1,0],
+        rumba32:[1,0,0,1,0,0,0,1,0,0,1,0,1,0,0,0], rumba23:[0,0,1,0,1,0,0,0,1,0,0,0,1,0,0,1],
+        mambo:[1,0,0,1,0,0,1,0,0,1,0,1,1,0,0,0], chacha:[1,0,0,0,1,0,0,0,1,0,1,0,1,1,0,0],
+        samba:[1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0], bossa:[1,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0],
+        tango:[1,0,0,0,1,0,0,0,1,0,0,1,1,0,0,0], joropo:[1,0,0,1,0,0,1,0,0,1,0,0,1,0,1,0],
+        songo:[1,0,0,1,0,1,0,0,0,1,0,1,0,0,1,0], bolero:[1,0,0,0,1,0,1,1,1,0,0,0,1,0,1,1]
+    };
+
+    const STRINGS = {
+        zh: {
+            docTitle: '節奏大師 - 旗艦 12 風格版',
+            appTitle: '節奏大師 12風格旗艦版',
+            lblStrong: '🟩 重音音色', lblWeak: '⬛ 輕音音色',
+            strongOpts: ['鼓邊 (Rim)', '高音節拍'],
+            weakOpts: ['腳踏鈸 (Hat)', '低音節拍', '靜音'],
+            lblBpm: 'BPM 速度', lblAccentCount: '重音數 (3-10)',
+            accentUnit: ' 個',
+            btnRandom: '🎲 隨機重音',
+            lblStyle: '12 種風格選擇', stylePlaceholder: '-- 選擇風格 --',
+            playIdle: '▶ 播放 / 停止', playStart: '▶ 播放', playStop: '⏹ 停止',
+            btnExport: '💾 生成無雜音 WAV',
+            txtMade: '設計：朱元雷（Gemini Studio，2026 年 2 月）',
+            txtLicense: '© 2026 朱元雷 · <a href="https://creativecommons.org/licenses/by-nc/4.0/deed.zh-hant" target="_blank" rel="noopener">CC BY-NC 4.0</a> · 教學使用不限收費，詳見 <a href="https://tcmctw.github.io/" target="_blank" rel="noopener">tcmctw.github.io</a>',
+            langBtn: 'EN'
+        },
+        en: {
+            docTitle: 'Rhythm Master - 12-Style Edition',
+            appTitle: 'Rhythm Master · 12-Style Edition',
+            lblStrong: '🟩 Accent sound', lblWeak: '⬛ Weak-beat sound',
+            strongOpts: ['Rimshot (Rim)', 'High click'],
+            weakOpts: ['Hi-hat (Hat)', 'Low click', 'Silent'],
+            lblBpm: 'Tempo (BPM)', lblAccentCount: 'Accent count (3-10)',
+            accentUnit: '',
+            btnRandom: '🎲 Random accents',
+            lblStyle: '12 style presets', stylePlaceholder: '-- Select a style --',
+            playIdle: '▶ Play / Stop', playStart: '▶ Play', playStop: '⏹ Stop',
+            btnExport: '💾 Export clean WAV',
+            txtMade: 'Designed by Yuan-Lei Chu (Gemini Studio, February 2026)',
+            txtLicense: '© 2026 Yuan-Lei Chu (朱元雷) · <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a> · Free for teaching use, paid or unpaid; details at <a href="https://tcmctw.github.io/" target="_blank" rel="noopener">tcmctw.github.io</a>',
+            langBtn: '中文'
+        }
+    };
+    let lang = 'zh';
+    try { lang = localStorage.getItem('rhythmMasterLang') || 'zh'; } catch (e) {}
+
+    function setPlayLabel() {
+        document.getElementById('playBtn').innerText = isPlaying ? STRINGS[lang].playStop : STRINGS[lang].playStart;
+    }
+
+    function applyLang() {
+        const t = STRINGS[lang];
+        document.documentElement.lang = (lang === 'zh') ? 'zh-Hant' : 'en';
+        document.title = t.docTitle;
+        document.getElementById('appTitle').innerText = t.appTitle;
+        document.getElementById('lblStrong').innerText = t.lblStrong;
+        document.getElementById('lblWeak').innerText = t.lblWeak;
+        const ss = document.getElementById('strongSound');
+        for (let i = 0; i < ss.options.length; i++) ss.options[i].text = t.strongOpts[i];
+        const ws = document.getElementById('weakSound');
+        for (let i = 0; i < ws.options.length; i++) ws.options[i].text = t.weakOpts[i];
+        document.getElementById('lblBpm').innerText = t.lblBpm;
+        document.getElementById('lblAccentCount').innerText = t.lblAccentCount;
+        const ac = document.getElementById('accentCount');
+        for (let i = 0; i < ac.options.length; i++) ac.options[i].text = ac.options[i].value + t.accentUnit;
+        document.getElementById('btnRandom').innerText = t.btnRandom;
+        document.getElementById('lblStyle').innerText = t.lblStyle;
+        document.getElementById('styleSelect').options[0].text = t.stylePlaceholder;
+        document.getElementById('playBtn').innerText = isPlaying ? t.playStop : t.playIdle;
+        document.getElementById('btnExport').innerText = t.btnExport;
+        document.getElementById('txtMade').innerText = t.txtMade;
+        document.getElementById('txtLicense').innerHTML = t.txtLicense;
+        document.getElementById('btnLang').innerText = t.langBtn;
+    }
+
+    function toggleLang() {
+        lang = (lang === 'zh') ? 'en' : 'zh';
+        try { localStorage.setItem('rhythmMasterLang', lang); } catch (e) {}
+        applyLang();
+    }
+
+    function initGrid(pattern) {
+        const g = document.getElementById('grid'); if (!g) return; g.innerHTML = '';
+        for(let i=0; i<16; i++) {
+            const c = document.createElement('div'); c.id = 's'+i;
+            c.className = 'cell' + (pattern[i] ? ' note' : '');
+            c.innerText = pattern[i] ? '1' : '0';
+            c.onclick = () => { c.classList.toggle('note'); c.innerText = c.classList.contains('note') ? '1' : '0'; resumeAudio(); };
+            g.appendChild(c);
+        }
+    }
+
+    function randomizeAccents() {
+        const count = parseInt(document.getElementById('accentCount').value);
+        let pattern = new Array(16).fill(0);
+        let indices = Array.from({length: 16}, (_, i) => i);
+        for (let i = 0; i < count; i++) {
+            let randIdx = Math.floor(Math.random() * indices.length);
+            pattern[indices.splice(randIdx, 1)[0]] = 1;
+        }
+        initGrid(pattern);
+    }
+
+    function applyLatinStyle() {
+        const val = document.getElementById('styleSelect').value;
+        if (latinStyles[val]) initGrid(latinStyles[val]);
+    }
+
+    function resumeAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 });
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function createClick(ctx, type, time, vol, target) {
+        if (vol <= 0 || type === 'silent') return;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(vol, time); g.gain.linearRampToValueAtTime(0, time + 0.04);
+        if (type === 'hihat') {
+            const b = ctx.createBuffer(1, 2000, 44100); const d = b.getChannelData(0);
+            for(let i=0; i<2000; i++) d[i] = Math.random()*2-1;
+            const s = ctx.createBufferSource(); s.buffer = b;
+            const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 7000;
+            s.connect(f); f.connect(g); g.connect(target); s.start(time);
+        } else {
+            const o = ctx.createOscillator();
+            o.frequency.setValueAtTime(type==='rimshot'?450:(type==='highClick'?1200:600), time);
+            o.connect(g); g.connect(target); o.start(time); o.stop(time+0.05);
+        }
+    }
+
+    function scheduler() {
+        while (nextStepTime < audioCtx.currentTime + 0.1) {
+            const cell = document.getElementById('s' + step);
+            if (cell) {
+                const isNote = cell.classList.contains('note');
+                createClick(audioCtx, isNote?document.getElementById('strongSound').value:document.getElementById('weakSound').value, nextStepTime, parseFloat(isNote?document.getElementById('strongVol').value:document.getElementById('weakVol').value), audioCtx.destination);
+            }
+            let s = step; 
+            setTimeout(() => {
+                document.querySelectorAll('.cell').forEach(c => c.classList.remove('active-step'));
+                const cur = document.getElementById('s'+s); if(cur) cur.classList.add('active-step');
+            }, (nextStepTime - audioCtx.currentTime) * 1000);
+            nextStepTime += (60 / (parseFloat(document.getElementById('bpm').value) || 80)) / 4;
+            step = (step + 1) % 16;
+        }
+        timer = setTimeout(scheduler, 25);
+    }
+
+    function togglePlay() {
+        resumeAudio();
+        if (isPlaying) { clearTimeout(timer); isPlaying = false; }
+        else { step = 0; nextStepTime = audioCtx.currentTime + 0.05; isPlaying = true; scheduler(); }
+        setPlayLabel();
+    }
+
+    // --- 終極修正：純淨波形導出 ---
+    function exportWav() {
+        const bpm = parseFloat(document.getElementById('bpm').value) || 80;
+        const sr = 44100;
+        const stepSamples = Math.floor((60 / bpm / 4) * sr);
+        const buffer = new Float32Array(stepSamples * 64);
+
+        function addTick(startIdx, freq, vol) {
+            const duration = Math.floor(sr * 0.04);
+            for (let i = 0; i < duration; i++) {
+                if (startIdx + i >= buffer.length) break;
+                const env = 1 - (i / duration);
+                buffer[startIdx + i] += Math.sin(2 * Math.PI * freq * (i / sr)) * vol * env;
+            }
+        }
+
+        for (let i = 0; i < 64; i++) {
+            const isNote = document.getElementById('s' + (i % 16)).classList.contains('note');
+            addTick(i * stepSamples, isNote ? 1000 : 500, isNote ? 0.6 : 0.2);
+        }
+
+        const view = new DataView(new ArrayBuffer(44 + buffer.length * 2));
+        const writeStr = (o, s) => { for(let i=0; i<s.length; i++) view.setUint8(o+i, s.charCodeAt(i)); };
+        writeStr(0, 'RIFF'); view.setUint32(4, 36 + buffer.length * 2, true);
+        writeStr(8, 'WAVE'); writeStr(12, 'fmt '); view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); view.setUint16(22, 1, true);
+        view.setUint32(24, sr, true); view.setUint32(28, sr * 2, true);
+        view.setUint16(32, 2, true); view.setUint16(34, 16, true);
+        writeStr(36, 'data'); view.setUint32(40, buffer.length * 2, true);
+        for(let i=0; i<buffer.length; i++) {
+            let s = Math.max(-1, Math.min(1, buffer[i]));
+            view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+        }
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([view.buffer], {type:'audio/wav'}));
+        a.download = `Perfect_Click_${bpm}.wav`; a.click();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => { initGrid(latinStyles.son32); applyLang(); });
+</script>
+</body>
+</html>
